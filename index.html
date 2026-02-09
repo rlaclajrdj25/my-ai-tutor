@@ -43,22 +43,11 @@
         <div class="input-box">
             <input type="text" id="userInput" placeholder="질문을 입력하세요..." onkeypress="if(event.keyCode==13) sendMessage()">
         </div>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()">전송</button>
+        <button class="send-btn" onclick="sendMessage()">전송</button>
     </div>
 </div>
 
 <script>
-    // [중요] 발급받은 실제 API 키가 정확히 들어있는지 확인하세요.
-    const API_KEY = "AIzaSyBxnj8lNrrQSc_tXYWYwEF1NkWgfnZwRlc"; 
-
-    // 교재 핵심 데이터 주입
-    const myTextbookData = `
-        교재명: Basic English Grammar
-        핵심 이론: 영어는 SVO(주어-동사-목적어) 어순이 핵심이며, 한국어는 SOV 어순과 조사/어미가 발달한 차이가 있음.
-        품사 분류 기준: 의미(Semantic), 형태(Morphological), 위치(Syntactic).
-        로드맵: 1주차 품사부터 15주차 프로젝트까지 구성.
-    `;
-
     async function sendMessage() {
         const input = document.getElementById('userInput');
         const chatBody = document.getElementById('chatBody');
@@ -67,28 +56,23 @@
 
         if (!query) return;
 
-        // 사용자 메시지 화면 표시
         addMessage(query, 'user-msg');
         input.value = '';
         typingArea.style.display = 'block';
 
         try {
-            // [최종 수정] 주소 형식을 구글 v1 표준으로 고정하여 모델 인식 오류 해결
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-            
-            const response = await fetch(url, {
+            // [수정 포인트] 외부 구글 주소가 아니라 내가 만든 Vercel API(/api/chat)로 요청을 보냅니다.
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `너는 군산대 교재 전문 AI 튜터야. 아래 데이터를 기반으로 질문에 답해줘.\n데이터: ${myTextbookData}\n질문: ${query}` }] }]
-                })
+                body: JSON.stringify({ query: query })
             });
 
             const data = await response.json();
             
-            // API 응답 오류 확인
-            if (data.error) throw new Error(data.error.message);
+            if (data.error) throw new Error(data.error);
 
+            // Vercel Serverless Function에서 전달받은 응답 데이터 처리
             const botReply = data.candidates[0].content.parts[0].text;
             typingArea.style.display = 'none';
             typeWriter(botReply, 'bot-msg');
@@ -114,11 +98,9 @@
         const div = document.createElement('div');
         div.className = 'msg ' + className;
         chatBody.appendChild(div);
-        
         let i = 0;
         const interval = setInterval(() => {
-            div.innerText += text.charAt(i);
-            i++;
+            div.innerText += text.charAt(i); i++;
             chatBody.scrollTop = chatBody.scrollHeight;
             if (i >= text.length) clearInterval(interval);
         }, 15);
