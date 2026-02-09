@@ -1,78 +1,110 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Grammar Tutor</title>
-  <style>
-    body{margin:0;font-family:sans-serif;background:#f8fafc}
-    .app{max-width:480px;height:100vh;margin:auto;display:flex;flex-direction:column;background:#fff}
-    header{padding:16px;border-bottom:1px solid #eee}
-    header h1{margin:0;font-size:18px}
-    header p{margin:4px 0 0;font-size:12px;color:#666}
-    #chat{flex:1;overflow-y:auto;padding:16px}
-    .msg{margin-bottom:12px;padding:10px 14px;border-radius:14px;max-width:80%;white-space:pre-wrap}
-    .bot{border:1px solid #ddd}
-    .user{background:#4A90E2;color:#fff;margin-left:auto}
-    footer{display:flex;padding:12px;border-top:1px solid #eee}
-    input{flex:1;padding:10px;border-radius:10px;border:1px solid #ddd}
-    button{margin-left:8px;border:none;border-radius:10px;background:#4A90E2;color:#fff;padding:0 16px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Grammar Tutor | 군산대 영문과 프로젝트</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #4A90E2; --bg: #F8FAFC; --text: #1E293B; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Pretendard', sans-serif; background: var(--bg); }
+        .app-wrapper { max-width: 500px; height: 100vh; margin: 0 auto; display: flex; flex-direction: column; background: white; box-shadow: 0 0 40px rgba(0,0,0,0.05); }
+        .chat-header { padding: 20px; background: white; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; gap: 15px; }
+        .header-info h1 { font-size: 18px; margin: 0; color: var(--text); }
+        .header-info p { font-size: 12px; margin: 3px 0 5px; color: #64748B; }
+        .pdf-btn { font-size: 11px; color: var(--primary); text-decoration: none; border: 1px solid var(--primary); padding: 3px 10px; border-radius: 20px; display: inline-block; }
+        #chatBody { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-image: radial-gradient(#E2E8F0 0.5px, transparent 0.5px); background-size: 20px 20px; }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; animation: fadeIn 0.3s ease; white-space: pre-wrap; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .bot-msg { align-self: flex-start; background: white; color: var(--text); border: 1px solid #E2E8F0; border-bottom-left-radius: 2px; }
+        .user-msg { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .chat-footer { padding: 20px; background: white; border-top: 1px solid #F1F5F9; display: flex; gap: 10px; }
+        .input-box { flex: 1; background: #F1F5F9; border-radius: 12px; padding: 10px 15px; display: flex; }
+        #userInput { border: none; background: transparent; flex: 1; outline: none; font-size: 15px; }
+        .send-btn { background: var(--primary); color: white; border: none; width: 60px; height: 45px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .typing { font-size: 12px; color: #94A3B8; margin: 0 0 10px 20px; display: none; }
+    </style>
 </head>
 <body>
-
-<div class="app">
-  <header>
-    <h1>🎓 기초영문법 AI 튜터</h1>
-    <p>교재 기반 문법 학습 챗봇</p>
-  </header>
-
-  <div id="chat">
-    <div class="msg bot">
-      안녕하세요!  
-      Basic English Grammar 교재를 기반으로 한 AI 튜터입니다.  
-      문법 질문을 해보세요 😊
+<div class="app-wrapper">
+    <div class="chat-header">
+        <div style="font-size: 28px;">🎓</div>
+        <div class="header-info">
+            <h1>기초영문법 AI 튜터</h1>
+            <p>교재 기반 문법 학습 챗봇</p>
+            <a href="Preface.pdf" target="_blank" class="pdf-btn"><i class="fa-solid fa-file-pdf"></i> 원본 교재 보기</a>
+        </div>
     </div>
-  </div>
-
-  <footer>
-    <input id="input" placeholder="질문을 입력하세요"
-      onkeydown="if(event.key==='Enter') send()"/>
-    <button onclick="send()">전송</button>
-  </footer>
+    <div id="chatBody">
+        <div class="msg bot-msg">안녕하세요! 🎓<br>Basic English Grammar 교재를 기반으로 한 AI 튜터입니다. 궁금한 문법 질문을 해보세요! 😊</div>
+    </div>
+    <div id="typingArea" class="typing">AI 튜터가 답변을 작성 중입니다...</div>
+    <div class="chat-footer">
+        <div class="input-box"><input type="text" id="userInput" placeholder="질문을 입력하세요..." onkeypress="if(event.keyCode==13) sendMessage()"></div>
+        <button class="send-btn" onclick="sendMessage()">전송</button>
+    </div>
 </div>
 
 <script>
-async function send(){
-  const input = document.getElementById("input");
-  const chat = document.getElementById("chat");
-  const text = input.value.trim();
-  if(!text) return;
+    // [중요] 발급받은 실제 API 키를 여기에 넣으세요.
+    const API_KEY = "AIzaSyBxnj8lNrrQSc_tXYWYwEF1NkWgfnZwRlc"; 
 
-  chat.innerHTML += `<div class="msg user">${text}</div>`;
-  input.value = "";
-  chat.scrollTop = chat.scrollHeight;
+    // 교재 데이터 기반 답변 설정
+    const myTextbookData = "영어는 SVO 어순과 조동사가 중요하고, 한국어는 SOV 어순과 조사/어미가 발달했다는 점이 핵심입니다.";
 
-  try{
-    const res = await fetch(
-      "https://my-ai-tutor-mm2y.vercel.app/api/chat",
-      {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ message: text })
-      }
-    );
+    async function sendMessage() {
+        const input = document.getElementById('userInput');
+        const chatBody = document.getElementById('chatBody');
+        const typingArea = document.getElementById('typingArea');
+        const query = input.value.trim();
+        if (!query) return;
 
-    const data = await res.json();
-    chat.innerHTML += `<div class="msg bot">${data.answer}</div>`;
-    chat.scrollTop = chat.scrollHeight;
+        addMessage(query, 'user-msg');
+        input.value = '';
+        typingArea.style.display = 'block';
 
-  }catch(e){
-    chat.innerHTML += `<div class="msg bot">❌ 서버 연결 오류</div>`;
-  }
-}
-</script>
+        try {
+            // [최종 수정] 주소 형식을 구글 표준 방식인 v1/models/gemini-1.5-flash로 통일합니다.
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: `너는 군산대학교 영문과 교재 튜터야. 아래 지식을 참고해서 친절하게 답변해줘.\n지식: ${myTextbookData}\n질문: ${query}` }] }]
+                })
+            });
 
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error.message);
 
-</body>
-</html>
+            const botReply = data.candidates[0].content.parts[0].text;
+            typingArea.style.display = 'none';
+            typeWriter(botReply, 'bot-msg');
+        } catch (error) {
+            typingArea.style.display = 'none';
+            addMessage("연결 실패: " + error.message, 'bot-msg');
+            console.error(error);
+        }
+    }
+
+    function addMessage(text, className) {
+        const chatBody = document.getElementById('chatBody');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'msg ' + className;
+        msgDiv.innerText = text;
+        chatBody.appendChild(msgDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function typeWriter(text, className) {
+        const chatBody = document.getElementById('chatBody');
+        const div = document.createElement('div');
+        div.className = 'msg ' + className;
+        chatBody.appendChild(div);
+        let i = 0;
+        const interval = setInterval(() => {
+            div.innerText += text.charAt(i); i++;
+            chatBody.scrollTop = chatBody.scrollHeight;
+            if (i >= text.length) clearInterval(interval);
