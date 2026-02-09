@@ -1,0 +1,8 @@
+{
+  "name": "gemini-chatbot",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@google/generative-ai": "latest"
+  }
+}
