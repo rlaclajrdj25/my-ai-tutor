@@ -1,180 +1,26 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Grammar Tutor | 스마트 교재 엔진</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #4A90E2;
-            --bg-color: #F8FAFC;
-            --bot-bubble: #FFFFFF;
-            --user-bubble: #4A90E2;
-            --text-main: #1E293B;
-        }
+/* 개선된 연결 로직 (index.html 내부 script 부분에 반영됨) */
+async function sendMessage() {
+    // ... (중략) ...
+    try {
+        // API 호출 시 에러 메시지를 더 구체적으로 파악하도록 수정
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: `너는 교재 튜터야. 질문에 답해줘: ${query}` }] }]
+            })
+        });
 
-        body, html { 
-            margin: 0; padding: 0; height: 100%; 
-            font-family: 'Pretendard', -apple-system, sans-serif;
-            background-color: var(--bg-color);
-        }
-
-        .app-wrapper {
-            max-width: 500px; height: 100vh; margin: 0 auto;
-            display: flex; flex-direction: column; background: white;
-            box-shadow: 0 0 40px rgba(0,0,0,0.05);
-        }
-
-        /* 헤더: PDF 보기 버튼 포함 */
-        .chat-header {
-            padding: 20px; background: white; border-bottom: 1px solid #F1F5F9;
-            display: flex; align-items: center; gap: 15px;
-        }
-        .header-info h1 { font-size: 18px; margin: 0; color: var(--text-main); }
-        .header-info p { font-size: 12px; margin: 3px 0 5px; color: #64748B; }
-        .pdf-btn {
-            font-size: 11px; color: var(--primary); text-decoration: none; 
-            border: 1px solid var(--primary); padding: 3px 10px; border-radius: 20px;
-            display: inline-block; transition: 0.3s;
-        }
-        .pdf-btn:hover { background: var(--primary); color: white; }
-
-        #chatBody {
-            flex: 1; overflow-y: auto; padding: 20px;
-            display: flex; flex-direction: column; gap: 15px;
-            background-image: radial-gradient(#E2E8F0 0.5px, transparent 0.5px);
-            background-size: 20px 20px;
-        }
-
-        .msg { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.6; animation: fadeIn 0.3s ease; white-space: pre-wrap; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .bot-msg { align-self: flex-start; background: var(--bot-bubble); color: var(--text-main); border: 1px solid #E2E8F0; border-bottom-left-radius: 2px; }
-        .user-msg { align-self: flex-end; background: var(--user-bubble); color: white; border-bottom-right-radius: 2px; }
-
-        .chat-footer { padding: 20px; background: white; border-top: 1px solid #F1F5F9; display: flex; gap: 10px; }
-        .input-box { flex: 1; background: #F1F5F9; border-radius: 12px; padding: 10px 15px; display: flex; }
-        #userInput { border: none; background: transparent; flex: 1; outline: none; font-size: 15px; }
-        .send-btn { background: var(--primary); color: white; border: none; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; }
-
-        .typing { font-size: 12px; color: #94A3B8; margin: 0 0 10px 20px; display: none; }
-    </style>
-</head>
-<body>
-
-<div class="app-wrapper">
-    <div class="chat-header">
-        <div style="font-size: 28px;">🤖</div>
-        <div class="header-info">
-            <h1>기초영문법 AI 튜터</h1>
-            <p>전공 교재 지식 기반 맞춤형 학습</p>
-            <a href="Preface.pdf" target="_blank" class="pdf-btn">
-                <i class="fa-solid fa-file-pdf"></i> 원본 교재 보기
-            </a>
-        </div>
-    </div>
-
-    <div id="chatBody">
-        <div class="msg bot-msg">반갑습니다! 군산대학교 학우님. 'Basic English Grammar' 교재 내용을 바탕으로 문법 학습을 도와드리는 AI 튜터입니다. 궁금한 문법 개념이나 교재 내용에 대해 질문해 주세요!</div>
-    </div>
-
-    <div id="typingArea" class="typing">AI 튜터가 답변을 생각 중입니다...</div>
-
-    <div class="chat-footer">
-        <div class="input-box">
-            <input type="text" id="userInput" placeholder="질문을 입력하세요..." onkeypress="if(event.keyCode==13) sendMessage()">
-        </div>
-        <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-    </div>
-</div>
-
-<script>
-    /* [공모전 필수 체크] 
-       1. 아래 API_KEY 변수를 직접 수정하거나 
-       2. Vercel Settings -> Environment Variables에서 GEMINI_API_KEY를 등록하세요. */
-    const API_KEY = "AIzaSyBxnj8lNrrQSc_tXYWYwEF1NkWgfnZwRlc"; 
-
-    const myTextbookData = `
-        - 교재명: Basic English Grammar (Foundations of English Syntax)
-        - 핵심 타겟: 영어 기초가 필요한 한국인 학습자
-        - 주요 지식: 
-            1. 영어(SVO)와 한국어(SOV)의 어순 차이. 영어는 어순과 조동사가 중요함.
-            2. 한국어는 조사(-가, -을)와 어미가 발달함.
-            3. 품사 분류 기준: 의미(Semantic), 형태(Morphological), 위치(Syntactic).
-            4. 관사(a, an, the) 사용의 중요성과 한국어와의 차이점.
-        - AI 학습 가이드: 퀴즈 생성, 문장 성분 분류 테스트, SVO 어순 교정 등.
-    `;
-
-    async function sendMessage() {
-        const input = document.getElementById('userInput');
-        const chatBody = document.getElementById('chatBody');
-        const typingArea = document.getElementById('typingArea');
-        const query = input.value.trim();
-
-        if (!query) return;
-
-        addMessage(query, 'user-msg');
-        input.value = '';
-        typingArea.style.display = 'block';
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `당신은 'Basic English Grammar' 교재의 전문 AI 튜터입니다. 
-                            반드시 다음 데이터를 기반으로 답변하세요: ${myTextbookData}
-                            학생 질문: ${query}
-                            답변 가이드: 한국어와 영어의 구조적 차이를 예로 들어 친절하게 설명하세요.`
-                        }]
-                    }]
-                })
-            });
-
-            const data = await response.json();
-            
-            // API 키 오류 처리 로직 강화
-            if (data.error) {
-                throw new Error(data.error.message);
-            }
-
-            const botReply = data.candidates[0].content.parts[0].text;
-            typingArea.style.display = 'none';
-            typeWriter(botReply, 'bot-msg');
-
-        } catch (error) {
-            typingArea.style.display = 'none';
-            addMessage("연결 오류가 발생했습니다. API 키가 유효한지 또는 Vercel 환경 변수 설정을 확인해 주세요.", 'bot-msg');
-            console.error(error);
-        }
-    }
-
-    function addMessage(text, className) {
-        const chatBody = document.getElementById('chatBody');
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'msg ' + className;
-        msgDiv.innerText = text;
-        chatBody.appendChild(msgDiv);
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }
-
-    function typeWriter(text, className) {
-        const chatBody = document.getElementById('chatBody');
-        const div = document.createElement('div');
-        div.className = 'msg ' + className;
-        chatBody.appendChild(div);
+        const data = await response.json();
         
-        let i = 0;
-        const interval = setInterval(() => {
-            div.innerText += text.charAt(i);
-            i++;
-            chatBody.scrollTop = chatBody.scrollHeight;
-            if (i >= text.length) clearInterval(interval);
-        }, 15);
+        // 만약 키가 차단되었다면 여기서 에러를 명확히 잡아냅니다.
+        if (data.error) {
+            console.error("Gemini API Error:", data.error.message);
+            addMessage("에러 발생: " + data.error.message, 'bot-msg');
+            return;
+        }
+        // ... (이하 동일) ...
+    } catch (error) {
+        addMessage("네트워크 연결에 문제가 있습니다.", 'bot-msg');
     }
-</script>
-</body>
-</html>
+}
