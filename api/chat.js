@@ -15,8 +15,7 @@ export default async function handler(req, res) {
   }
 
   // 3. 모델명을 현재 작동하는 gemini-1.5-flash로 수정함 (v1beta 버전 사용)
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
+const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
   try {
     const response = await fetch(url, {
       method: 'POST',
